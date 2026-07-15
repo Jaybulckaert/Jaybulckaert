@@ -1,10 +1,10 @@
 - 👋 Hi, I’m @Jaybulckaert
-- 👀 I’m interested in generative video/vfx applications and LLM's for low resource languages (indigenous)
-- 🌱 I’m currently learning how to build LLM for the Tlicho Language
-- 💞️ I’m looking to collaborate on LLM's/Generative video trainining systems
-- 📫 How to reach me: jay@artlesscollective.com
-- 😄 Pronouns: ...
-- ⚡ Fun fact: I live in the arctic of Canada
+- 👀 I’m interested in generative video/vfx applications and localized intelligence to help the North thrive in the age of AI.
+- 🌱 I’m currently learning how to build an intelligence company with Claude/Gemini
+- 💞️ I’m looking to collaborate on anything in this space.
+- 📫 How to reach me: jay@rated-n.ca
+- 😄 Pronouns: 
+- ⚡ Fun fact: I live in the Arctic of Canada
 
 <!---
 Jaybulckaert/Jaybulckaert is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.
