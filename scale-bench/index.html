@@ -1,0 +1,392 @@
+<title>Banff Scale Bench</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper: #EEF0F2;
+    --paper-2: #E2E6EA;
+    --ink: #1B2028;
+    --ink-2: #4A5462;
+    --rule: #B9B3A6;
+    --sky: #3F6A9E;
+    --flag: #E4612B;
+    --spruce: #2E4B3C;
+    --panel: #0E1216;
+    --panel-text: #E6E9EE;
+    --font-display: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
+    --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #14181E;
+      --paper-2: #1C222A;
+      --ink: #E6E9EE;
+      --ink-2: #A3ACB8;
+      --rule: #4E5560;
+      --sky: #7FA6D6;
+      --flag: #F07A45;
+      --spruce: #8FB8A3;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #14181E;
+    --paper-2: #1C222A;
+    --ink: #E6E9EE;
+    --ink-2: #A3ACB8;
+    --rule: #4E5560;
+    --sky: #7FA6D6;
+    --flag: #F07A45;
+    --spruce: #8FB8A3;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.5;
+    padding-inline: 20px;
+    padding-block: 24px 48px;
+  }
+  .wrap { max-width: 1400px; margin-inline: auto; display: grid; gap: 22px; }
+
+  header { display: grid; gap: 6px; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-2);
+  }
+  h1 {
+    font-family: var(--font-display); font-weight: 700; font-size: clamp(34px, 5vw, 56px);
+    line-height: 1; margin: 0; letter-spacing: 0.005em; text-wrap: balance;
+  }
+  .lede { max-width: 62ch; color: var(--ink-2); margin: 0; }
+  .lede b { color: var(--ink); font-weight: 500; }
+
+  /* controls */
+  .bench {
+    display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: end;
+    padding-block: 14px; border-block: 1px solid var(--rule);
+  }
+  .ctl { display: grid; gap: 6px; min-width: 150px; }
+  .ctl label {
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-2);
+  }
+  .ctl input[type="number"], .ctl select {
+    font: 500 15px var(--font-mono); color: var(--ink); background: var(--paper-2);
+    border: 1px solid var(--rule); border-radius: 3px; padding: 6px 8px; width: 110px;
+  }
+  .ctl select { width: auto; min-width: 160px;
+  }
+  .ctl.wide { flex: 1 1 260px; }
+  .ctl input[type="range"] { width: 100%; accent-color: var(--flag); }
+  .ctl .row { display: flex; gap: 10px; align-items: center; }
+  .readout { font: 500 15px var(--font-mono); font-variant-numeric: tabular-nums; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 14px; padding-bottom: 6px; }
+  .check input { accent-color: var(--flag); width: 16px; height: 16px; }
+  :focus-visible { outline: 2px solid var(--flag); outline-offset: 2px; }
+
+  /* the two panels */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 820px) { .compare { grid-template-columns: 1fr; } }
+  .panel { display: grid; grid-template-rows: auto 1fr; gap: 8px; min-width: 0; }
+  .panel-head {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  }
+  .ratio {
+    font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .ratio small { font-family: var(--font-mono); font-size: 12px; font-weight: 400; color: var(--ink-2); letter-spacing: 0.08em; margin-left: 8px; }
+  .meters { font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .meters b { color: var(--ink); font-weight: 500; }
+
+  .view {
+    position: relative; height: 60vh; overflow: auto;
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 4px;
+    overscroll-behavior: contain; scrollbar-color: var(--flag) transparent;
+  }
+  .content { position: relative; display: block; line-height: 0; }
+  .content img { display: block; max-width: none; }
+
+  .ruler { position: absolute; bottom: 0; left: 0; pointer-events: none; }
+  .ruler .axis { position: absolute; left: 0; bottom: 0; width: 2px; background: var(--flag); }
+  .tick { position: absolute; left: 0; height: 1px; background: var(--flag); transform: translateY(0.5px); }
+  .tick span {
+    position: absolute; left: 0; bottom: 3px; white-space: nowrap; line-height: 1;
+    font: 500 11px var(--font-mono); color: #FFE9DE; letter-spacing: 0.04em;
+    text-shadow: 0 0 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.9);
+  }
+  .tick.peak { background: #FFFFFF; height: 2px; }
+  .tick.peak span { font-weight: 500; color: #fff; }
+  .peak-dot {
+    position: absolute; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff;
+    background: var(--flag); transform: translate(-50%, -50%); pointer-events: none;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.6);
+  }
+
+  .legend {
+    position: sticky; left: 0; bottom: 0; z-index: 2; pointer-events: none;
+    display: inline-flex; align-items: flex-end; gap: 10px; margin: 0;
+    padding: 8px 10px; background: rgba(14,18,22,0.78); color: var(--panel-text);
+    font: 400 12px var(--font-mono); line-height: 1.35; border-top-right-radius: 4px;
+    backdrop-filter: blur(3px);
+  }
+  .legend .fig { flex: none; }
+  .legend em { font-style: normal; color: #FFB08A; }
+
+  /* notes */
+  .notes { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+  @media (max-width: 820px) { .notes { grid-template-columns: 1fr; } }
+  h2 {
+    font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.1;
+    margin: 0 0 8px; text-wrap: balance;
+  }
+  .notes p { max-width: 62ch; margin: 0 0 10px; }
+  .formula {
+    font: 400 13.5px/1.6 var(--font-mono); background: var(--paper-2); border-left: 3px solid var(--sky);
+    padding: 10px 14px; margin: 10px 0; white-space: pre; overflow-x: auto;
+  }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th { font: 500 11.5px var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+  td.num { font-family: var(--font-mono); text-align: right; white-space: nowrap; }
+  th.num { text-align: right; }
+  tr.you td { color: var(--flag); font-weight: 500; }
+  .foot { font-size: 12.5px; color: var(--ink-2); max-width: 70ch; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .view { scroll-behavior: smooth; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Cascade Mountain · Banff Avenue · reference scale bench</div>
+    <h1>Banff Scale Bench</h1>
+    <p class="lede">The left frame is your original photo, read at <b>1600 : 1</b> against your height. The right frame is the same scene re-scaled so the mountain stands <b>5000×</b> you. Your pixel height never changes. The world does. Scroll either frame; the other follows.</p>
+  </header>
+
+  <section class="bench" aria-label="Controls">
+    <div class="ctl">
+      <label for="height">Your height, metres</label>
+      <input id="height" type="number" step="0.01" min="0.5" max="3" value="1.80">
+    </div>
+    <div class="ctl wide">
+      <label for="scale">Comparison scale <span class="readout" id="scaleReadout">5000 : 1</span></label>
+      <div class="row">
+        <input id="scale" type="range" min="1600" max="10000" step="50" value="5000">
+        <input id="scaleNum" type="number" min="1600" max="10000" step="50" value="5000" aria-label="Comparison scale, exact">
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="tickStep">Ruler tick</label>
+      <select id="tickStep">
+        <option value="250">every 250 × you</option>
+        <option value="500" selected>every 500 × you</option>
+        <option value="1000">every 1000 × you</option>
+      </select>
+    </div>
+    <label class="check"><input id="sync" type="checkbox" checked> Sync scrolling</label>
+    <label class="check"><input id="showRuler" type="checkbox" checked> Show rulers</label>
+  </section>
+
+  <section class="compare" aria-label="Side by side comparison">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="ratio">1600 : 1<small>ORIGINAL</small></div>
+        <div class="meters">peak rise ≈ <b id="mL">2 880 m</b> above street</div>
+      </div>
+      <div class="view" id="viewL" tabindex="0" aria-label="Original photo at 1600 to 1">
+        <div class="content" id="contentL">
+          <img id="imgL" src="banff-cascade.jpg" alt="Banff Avenue looking toward Cascade Mountain, original photo">
+          <div class="ruler" id="rulerL"><div class="axis"></div></div>
+          <div class="peak-dot" id="dotL"></div>
+        </div>
+        <div class="legend" id="legendL"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div class="ratio"><span id="ratioR">5000 : 1</span><small>MAGNIFIED <span id="magR">3.125×</span></small></div>
+        <div class="meters">peak rise ≈ <b id="mR">9 000 m</b> above street</div>
+      </div>
+      <div class="view" id="viewR" tabindex="0" aria-label="Same photo re-scaled to the comparison ratio">
+        <div class="content" id="contentR">
+          <img id="imgR" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="The same photo magnified so the mountain is the comparison ratio times your height">
+          <div class="ruler" id="rulerR"><div class="axis"></div></div>
+          <div class="peak-dot" id="dotR"></div>
+        </div>
+        <div class="legend" id="legendR"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div>
+      <h2>How the two frames are built</h2>
+      <p>A ratio like 1600 : 1 is a statement about the scene, not the file: the mountain's rise above the street is 1600 of your body lengths. To go to 5000 : 1 you have two choices, and they are the same picture. Shrink you, or grow the world. This tool grows the world, because you cannot shrink a pixel.</p>
+      <div class="formula" id="formula">magnification  = 5000 / 1600 = 3.125
+right frame    = left frame × 3.125, you held constant
+1 body length  = (peak rise in px) / 1600   → well under one screen pixel
+tick spacing   = 500 body lengths = same px in both frames</div>
+      <p>The ruler is anchored where the rock face meets the town's treeline, and its ticks are in multiples of you. In the left frame the peak lands on the 1600 tick. In the right frame the same peak, in the same photo, lands on the comparison tick. That is the whole demonstration: identical ruler, larger world.</p>
+      <p class="foot">The peak and base positions are read off the photo by eye, so the metre figures are indicative. Cascade Mountain's true summit is 2 998 m and Banff townsite sits near 1 383 m, so the real rise above the street is roughly 1 615 m, which is about 900 of a 1.8 m person, not 1600. Set the height box to whatever you actually measure and the table re-computes.</p>
+    </div>
+    <div>
+      <h2>What those heights mean in the real world</h2>
+      <table id="cmp">
+        <thead><tr><th>Reference</th><th class="num">Metres</th><th class="num">× you</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  // Geometry read off the photo (fractions of image width / height).
+  const PEAK = { x: 0.484, y: 0.500 };   // summit of Cascade Mountain
+  const BASE_Y = 0.711;                  // where the rock face meets the treeline / town
+  const RISE = BASE_Y - PEAK.y;          // fraction of image height that equals LEFT_SCALE body lengths
+  const LEFT_SCALE = 1600;
+  const RULER_X = 0.455;                 // where the ruler stands, just left of the summit
+
+  const $ = id => document.getElementById(id);
+  const viewL = $('viewL'), viewR = $('viewR');
+  const imgL = $('imgL'), imgR = $('imgR');
+  const contentL = $('contentL'), contentR = $('contentR');
+  const heightIn = $('height'), scaleIn = $('scale'), scaleNum = $('scaleNum'), tickIn = $('tickStep');
+
+  const REFS = [
+    { name: 'Cascade Mountain, real rise above Banff', m: 1615 },
+    { name: 'Cascade Mountain, summit elevation', m: 2998 },
+    { name: 'Mount Robson, highest in the Canadian Rockies', m: 3954 },
+    { name: 'Mount Logan, highest in Canada', m: 5959 },
+    { name: 'Mount Everest, summit elevation', m: 8849 },
+  ];
+
+  const fmt = n => Math.round(n).toLocaleString('en-CA').replace(/,/g, ' ');
+  const state = { scale: 5000, height: 1.8, tick: 500, syncing: false };
+  const ratio = () => state.scale / LEFT_SCALE;
+
+  function layout() {
+    const w = viewL.clientWidth;             // left image fits its panel exactly
+    const aspect = imgL.naturalHeight / imgL.naturalWidth;
+    imgL.style.width = w + 'px';  imgL.style.height = (w * aspect) + 'px';
+    imgR.style.width = (w * ratio()) + 'px';  imgR.style.height = (w * ratio() * aspect) + 'px';
+    viewL.style.height = viewR.style.height = Math.round(w * aspect) + 'px';
+    drawAll();
+  }
+
+  function drawPanel(view, img, content, ruler, dot, legend, scale) {
+    const W = img.clientWidth, H = img.clientHeight;
+    if (!H) return;
+    const bodyPx = (RISE * imgL.clientHeight) / LEFT_SCALE;   // one body length, same in both frames
+    const baseY = BASE_Y * H;
+    const stepPx = state.tick * bodyPx;
+    ruler.style.left = (RULER_X * W) + 'px';
+    ruler.style.bottom = (H - baseY) + 'px';
+    ruler.style.display = $('showRuler').checked ? '' : 'none';
+    const top = Math.ceil(scale / state.tick) * state.tick;
+    const axisH = top * bodyPx;
+    ruler.querySelector('.axis').style.height = axisH + 'px';
+    ruler.querySelectorAll('.tick').forEach(t => t.remove());
+    const marks = [];
+    for (let v = 0; v <= top; v += state.tick) marks.push(v);
+    if (!marks.includes(scale)) marks.push(scale);
+    marks.sort((a, b) => a - b);
+    for (const v of marks) {
+      const t = document.createElement('div');
+      const isPeak = v === scale;
+      t.className = 'tick' + (isPeak ? ' peak' : '');
+      t.style.bottom = (v * bodyPx) + 'px';
+      t.style.width = isPeak ? '46px' : (v % (state.tick * 2) === 0 ? '18px' : '10px');
+      const label = document.createElement('span');
+      if (!isPeak && Math.abs(v - scale) * bodyPx < 14) label.style.display = 'none';
+      label.textContent = isPeak ? `${fmt(v)} × you  ·  ${fmt(v * state.height)} m` : (v === 0 ? '0 · street' : fmt(v));
+      label.style.left = (parseInt(t.style.width) + 5) + 'px';
+      t.appendChild(label);
+      ruler.appendChild(t);
+    }
+    dot.style.left = (PEAK.x * W) + 'px';
+    dot.style.top = (PEAK.y * H) + 'px';
+    legend.innerHTML = `<svg class="fig" width="14" height="30" viewBox="0 0 14 30" aria-hidden="true"><circle cx="7" cy="4" r="3.4" fill="#F07A45"/><path d="M4 9h6l2 9h-2.5v11h-3v-8h-1v8h-3V18H2z" fill="#F07A45"/></svg>` +
+      `<div><em>you</em> = ${bodyPx.toFixed(3)} px at this zoom<br>peak = ${fmt(scale)} × you</div>`;
+  }
+
+  function drawAll() {
+    drawPanel(viewL, imgL, contentL, $('rulerL'), $('dotL'), $('legendL'), LEFT_SCALE);
+    drawPanel(viewR, imgR, contentR, $('rulerR'), $('dotR'), $('legendR'), state.scale);
+    $('ratioR').textContent = `${fmt(state.scale)} : 1`;
+    $('magR').textContent = ratio().toFixed(3).replace(/\.?0+$/, '') + '×';
+    $('scaleReadout').textContent = `${fmt(state.scale)} : 1`;
+    $('mL').textContent = fmt(LEFT_SCALE * state.height) + ' m';
+    $('mR').textContent = fmt(state.scale * state.height) + ' m';
+    $('formula').textContent =
+`magnification  = ${fmt(state.scale)} / 1600 = ${ratio().toFixed(4).replace(/\.?0+$/, '')}
+right frame    = left frame × ${ratio().toFixed(4).replace(/\.?0+$/, '')}, you held constant
+1 body length  = (peak rise in px) / 1600   → ${((RISE * imgL.clientHeight) / LEFT_SCALE).toFixed(3)} px at this zoom
+tick spacing   = ${fmt(state.tick)} body lengths = ${(state.tick * (RISE * imgL.clientHeight) / LEFT_SCALE).toFixed(1)} px in both frames`;
+    drawTable();
+  }
+
+  function drawTable() {
+    const rows = [
+      { name: 'You', m: state.height, you: true },
+      { name: 'This photo read at 1600 : 1', m: LEFT_SCALE * state.height, you: true },
+      { name: `This photo read at ${fmt(state.scale)} : 1`, m: state.scale * state.height, you: true },
+      ...REFS,
+    ].sort((a, b) => a.m - b.m);
+    $('cmp').querySelector('tbody').innerHTML = rows.map(r =>
+      `<tr${r.you ? ' class="you"' : ''}><td>${r.name}</td><td class="num">${r.m < 10 ? r.m.toFixed(2) : fmt(r.m)}</td><td class="num">${(r.m / state.height) < 10 ? (r.m / state.height).toFixed(1) : fmt(r.m / state.height)}</td></tr>`
+    ).join('');
+  }
+
+  // Scroll sync: keep the same image point at the centre of both viewports.
+  function sync(from, to, k) {
+    if (!$('sync').checked || state.syncing) return;
+    state.syncing = true;
+    const cx = (from.scrollLeft + from.clientWidth / 2) * k;
+    const cy = (from.scrollTop + from.clientHeight / 2) * k;
+    to.scrollLeft = cx - to.clientWidth / 2;
+    to.scrollTop = cy - to.clientHeight / 2;
+    requestAnimationFrame(() => { state.syncing = false; });
+  }
+  viewL.addEventListener('scroll', () => sync(viewL, viewR, ratio()));
+  viewR.addEventListener('scroll', () => sync(viewR, viewL, 1 / ratio()));
+
+  function centreOnPeak() {
+    const r = ratio();
+    viewR.scrollLeft = PEAK.x * imgR.clientWidth - viewR.clientWidth / 2;
+    viewR.scrollTop = (PEAK.y + RISE * 0.45) * imgR.clientHeight - viewR.clientHeight / 2;
+    viewL.scrollTop = Math.max(0, PEAK.y * imgL.clientHeight - viewL.clientHeight / 2);
+  }
+
+  function setScale(v) {
+    v = Math.min(10000, Math.max(1600, Math.round(v / 50) * 50 || 5000));
+    state.scale = v; scaleIn.value = v; scaleNum.value = v;
+    layout();
+    centreOnPeak();
+  }
+  scaleIn.addEventListener('input', e => setScale(+e.target.value));
+  scaleNum.addEventListener('change', e => setScale(+e.target.value));
+  heightIn.addEventListener('input', e => { const h = parseFloat(e.target.value); if (h > 0) { state.height = h; drawAll(); } });
+  tickIn.addEventListener('change', e => { state.tick = +e.target.value; drawAll(); });
+  $('showRuler').addEventListener('change', drawAll);
+  window.addEventListener('resize', () => { layout(); centreOnPeak(); });
+
+  function start() {
+    layout();
+    requestAnimationFrame(() => { layout(); centreOnPeak(); });
+  }
+  imgR.src = imgL.getAttribute('src');
+  if (imgL.complete && imgL.naturalWidth) start(); else imgL.addEventListener('load', start);
+})();
+</script>
